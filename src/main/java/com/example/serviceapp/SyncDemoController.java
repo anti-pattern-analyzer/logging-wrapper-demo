@@ -27,16 +27,20 @@ public class SyncDemoController {
         if (traceId == null) traceId = UUID.randomUUID().toString();
         String spanId = UUID.randomUUID().toString();
 
-        logService.log("service-a", "service-b", "GET", input, "Service A processed", traceId, spanId, parentSpanId);
+        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
-        // Call Service B with trace_id and span_id
-        return webClient.get()
+        logService.log("service-a", "service-b", methodName, "GET", input, null, traceId, spanId, parentSpanId);
+
+        String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/service-b").queryParam("input", input).build())
                 .header("trace_id", traceId)
                 .header("span_id", spanId)
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
+
+        logService.log("service-a", "service-b", methodName, "GET", input, response, traceId, spanId, parentSpanId);
+        return response;
     }
 
     @GetMapping("/service-b")
@@ -46,16 +50,21 @@ public class SyncDemoController {
 
         String spanId = UUID.randomUUID().toString();
 
-        logService.log("service-b", "service-c", "GET", input, "Service B processed", traceId, spanId, parentSpanId);
+        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+
+        logService.log("service-b", "service-c", methodName,"GET", input, null, traceId, spanId, parentSpanId);
 
         // Call Service C with trace_id and span_id
-        return webClient.get()
+        String response = webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/service-c").queryParam("input", input).build())
                 .header("trace_id", traceId)
                 .header("span_id", spanId)
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
+
+        logService.log("service-b", "service-c", methodName,"GET", input, response, traceId, spanId, parentSpanId);
+        return response;
     }
 
     @GetMapping("/service-c")
@@ -65,8 +74,13 @@ public class SyncDemoController {
 
         String spanId = UUID.randomUUID().toString();
 
-        logService.log("service-c", "database", "GET", input, "Service C processed", traceId, spanId, parentSpanId);
+        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
-        return "Service C processed successfully!";
+        logService.log("service-c", null, methodName,"GET", input, null, traceId, spanId, parentSpanId);
+
+        String response = "Service C processed successfully!";
+
+        logService.log("service-c", null, methodName,"GET", input, "Service C processed", traceId, spanId, parentSpanId);
+        return response;
     }
 }

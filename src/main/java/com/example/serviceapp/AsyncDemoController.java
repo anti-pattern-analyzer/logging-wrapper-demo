@@ -34,13 +34,18 @@ public class AsyncDemoController {
         if (traceId == null) traceId = UUID.randomUUID().toString();
         String spanId = UUID.randomUUID().toString();
 
-        logService.log("async-service-a", "kafka-async-event", "EVENT", input, "Service A initiated async event", traceId, spanId, parentSpanId);
+        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+
+        logService.log("async-service-a", "kafka-async-event", methodName, "EVENT", input, null, traceId, spanId, parentSpanId);
 
         // Send async event to Kafka instead of calling HTTP directly
         String message = String.format("trace_id=%s, span_id=%s, parent_span_id=%s, input=%s", traceId, spanId, parentSpanId, input);
         kafkaTemplate.send(TRACE_TOPIC, traceId, message);
 
-        return "Async event sent from Service A!";
+        String response = "Async event sent from Service A!";
+
+        logService.log("async-service-a", "kafka-async-event", methodName, "EVENT", input, response, traceId, spanId, parentSpanId);
+        return response;
     }
 
     // 2. Kafka Consumer - Listens for the event, then calls sync Service B**
@@ -51,7 +56,9 @@ public class AsyncDemoController {
         String parentSpanId = extractSpanId(message);
         String spanId = UUID.randomUUID().toString();
 
-        logService.log("kafka-consumer", "sync-service-b", "EVENT", message, "Kafka event received", traceId, spanId, parentSpanId);
+        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+
+        logService.log("kafka-consumer", "sync-service-b", methodName, "EVENT", message, null, traceId, spanId, parentSpanId);
 
         // 3. Calls a synchronous HTTP API (sync-service-b) after consuming event**
         String response = webClient.get()
@@ -62,7 +69,7 @@ public class AsyncDemoController {
                 .bodyToMono(String.class)
                 .block();
 
-        logService.log("kafka-consumer", "sync-service-b", "HTTP", message, response, traceId, spanId, parentSpanId);
+        logService.log("kafka-consumer", "sync-service-b", methodName, "HTTP", message, response, traceId, spanId, parentSpanId);
     }
 
     // 4. Synchronous Service B - Normal HTTP endpoint**
@@ -72,9 +79,15 @@ public class AsyncDemoController {
                                @RequestHeader(value = "span_id") String parentSpanId) {
 
         String spanId = UUID.randomUUID().toString();
-        logService.log("sync-service-b", "database", "HTTP", input, "Service B processed synchronously", traceId, spanId, parentSpanId);
 
-        return "Service B processed synchronously!";
+        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+
+        logService.log("sync-service-b", "database", methodName,"HTTP", input, "Service B processed synchronously", traceId, spanId, parentSpanId);
+
+        String response = "Service B processed synchronously!";
+
+        logService.log("sync-service-b", "database", methodName,"HTTP", input, "Service B processed synchronously", traceId, spanId, parentSpanId);
+        return response;
     }
 
     private String extractSpanId(String message) {
