@@ -1,27 +1,14 @@
-FROM eclipse-temurin:21-jdk AS builder
+# Use a lightweight JDK runtime image
+FROM eclipse-temurin:21-jdk
 
+# Set working directory
 WORKDIR /opt/app
 
-COPY pom.xml .
-COPY ./pom.xml pom.xml
+# Copy the built JAR file from GitHub Actions
+COPY target/serviceapp.jar serviceapp.jar
 
-RUN mvn dependency:go-offline -B
+# Expose the application port
+EXPOSE 8080
 
-FROM eclipse-temurin:21-jdk AS builder
-
-WORKDIR /opt/app
-
-COPY --from=deps /root/.m2 /root/.m2
-COPY --from=deps /opt/app/ /opt/app
-
-COPY src /opt/app/src
-
-RUN mvn package -B -DskipTests=true
-
-FROM gcr.io/distroless/java21-debian12
-
-WORKDIR /opt/app
-
-COPY --from=builder /opt/app/target/*.jar serviceapp.jar
-
+# Run the Spring Boot application
 ENTRYPOINT ["java", "-jar", "/opt/app/serviceapp.jar"]

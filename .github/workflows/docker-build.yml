@@ -22,15 +22,10 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Set up Maven Authentication for GitHub Packages
-        run: |
-          mkdir -p ~/.m2
-          echo "<settings><servers><server><id>github</id><username>${{ github.actor }}</username><password>${{ secrets.SECRET_TOKEN }}</password></server></servers></settings>" > ~/.m2/settings.xml
+      - name: Build JAR with Maven
+        run: mvn clean package -DskipTests
 
-      - name: Build Spring Boot JAR
-        run: mvn clean package -DskipTests --settings ~/.m2/settings.xml
-
-      - name: Verify JAR Exists
+      - name: Verify JAR File Exists
         run: ls -lah target/
 
       - name: Log in to GitHub Container Registry
