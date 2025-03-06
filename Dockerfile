@@ -1,14 +1,27 @@
-# Use the official OpenJDK 21 image
-FROM eclipse-temurin:21-jdk as builder
+FROM eclipse-temurin:21-jdk AS builder
 
-# Set the working directory
-WORKDIR /app
+WORKDIR /opt/app
 
-# Copy the JAR file (Assuming it's built via `mvn package` or `gradle build`)
-COPY target/serviceapp.jar serviceapp.jar
+COPY pom.xml .
+COPY ./pom.xml pom.xml
 
-# Expose the application port
-EXPOSE 8080
+RUN mvn dependency:go-offline -B
 
-# Run the Spring Boot application
-CMD ["java", "-jar", "serviceapp.jar"]
+FROM eclipse-temurin:21-jdk AS builder
+
+WORKDIR /opt/app
+
+COPY --from=deps /root/.m2 /root/.m2
+COPY --from=deps /opt/app/ /opt/app
+
+COPY src /opt/app/src
+
+RUN mvn package -B -DskipTests=true
+
+FROM gcr.io/distroless/java21-debian12
+
+WORKDIR /opt/app
+
+COPY --from=builder /opt/app/target/*.jar serviceapp.jar
+
+ENTRYPOINT ["java", "-jar", "/opt/app/serviceapp.jar"]
