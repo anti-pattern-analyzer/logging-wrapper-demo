@@ -1,4 +1,4 @@
-package com.example.serviceapp;
+package com.example.serviceapp.demo;
 
 import com.example.loggingwrapper.LogService;
 import org.springframework.web.bind.annotation.GetMapping;
