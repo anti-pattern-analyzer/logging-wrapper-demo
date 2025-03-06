@@ -5,7 +5,7 @@ FROM eclipse-temurin:21-jdk
 WORKDIR /opt/app
 
 # Copy the built JAR file from GitHub Actions
-COPY target/serviceapp.jar serviceapp.jar
+COPY target/*.jar serviceapp.jar
 
 # Expose the application port
 EXPOSE 8080
