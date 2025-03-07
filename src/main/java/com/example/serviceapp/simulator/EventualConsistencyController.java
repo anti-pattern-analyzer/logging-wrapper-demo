@@ -24,7 +24,7 @@ public class EventualConsistencyController {
 
     /**
      * Simulates writing data with delay before consistency is achieved.
-     * @curl curl -X GET "http://localhost:8080/eventual-consistency/write?input=test"
+     * @curl curl -X GET "http://localhost:8081/eventual-consistency/write?input=test"
      */
     @GetMapping("/eventual-consistency/write")
     public String writeData(@RequestParam String input,
@@ -53,7 +53,7 @@ public class EventualConsistencyController {
 
     /**
      * Simulates a stale read before data consistency is achieved.
-     * @curl curl -X GET "http://localhost:8080/eventual-consistency/read"
+     * @curl curl -X GET "http://localhost:8081/eventual-consistency/read"
      */
     @GetMapping("/eventual-consistency/read")
     public String readData(@RequestHeader(value = "trace_id", required = false) String traceId,

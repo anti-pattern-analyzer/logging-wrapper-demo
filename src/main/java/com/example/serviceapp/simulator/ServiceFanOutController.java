@@ -8,6 +8,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Simulates a Service Fan-out Overload - a single service making excessive calls to multiple downstream services.
@@ -19,37 +20,31 @@ public class ServiceFanOutController {
 
     public ServiceFanOutController(LogService logService, WebClient.Builder webClientBuilder) {
         this.logService = logService;
-        this.webClient = webClientBuilder.baseUrl("http://localhost:8080").build();
+        this.webClient = webClientBuilder.baseUrl("http://localhost:8081").build();
     }
 
     /**
      * Simulate a service calling too many downstream services.
-     * @curl curl -X GET "http://localhost:8080/fan-out/service-main?input=test"
+     * @curl curl -X GET "http://localhost:8081/fan-out/service-main?input=test"
      */
     @GetMapping("/fan-out/service-main")
-    public String serviceMain(@RequestParam String input,
-                              @RequestHeader(value = "trace_id", required = false) String traceId,
-                              @RequestHeader(value = "span_id", required = false) String parentSpanId) {
-
+    public CompletableFuture<String> serviceMain(@RequestParam String input,
+                                                 @RequestHeader(value = "trace_id", required = false) String traceId,
+                                                 @RequestHeader(value = "span_id", required = false) String parentSpanId) {
         if (traceId == null) traceId = UUID.randomUUID().toString();
         String spanId = UUID.randomUUID().toString();
-        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
-        logService.log("fan-out-service-main", "fan-out-service-a", methodName, "GET", input, null, traceId, spanId, parentSpanId);
-        logService.log("fan-out-service-main", "fan-out-service-b", methodName, "GET", input, null, traceId, spanId, parentSpanId);
-        logService.log("fan-out-service-main", "fan-out-service-c", methodName, "GET", input, null, traceId, spanId, parentSpanId);
-        logService.log("fan-out-service-main", "fan-out-service-d", methodName, "GET", input, null, traceId, spanId, parentSpanId);
+        String finalTraceId = traceId;
+        CompletableFuture<String> responseA = CompletableFuture.supplyAsync(() -> callDownstreamService("fan-out-service-a", input, finalTraceId, spanId));
+        String finalTraceId1 = traceId;
+        CompletableFuture<String> responseB = CompletableFuture.supplyAsync(() -> callDownstreamService("fan-out-service-b", input, finalTraceId1, spanId));
+        String finalTraceId2 = traceId;
+        CompletableFuture<String> responseC = CompletableFuture.supplyAsync(() -> callDownstreamService("fan-out-service-c", input, finalTraceId2, spanId));
+        String finalTraceId3 = traceId;
+        CompletableFuture<String> responseD = CompletableFuture.supplyAsync(() -> callDownstreamService("fan-out-service-d", input, finalTraceId3, spanId));
 
-        // Call multiple downstream services
-        String responseA = callDownstreamService("fan-out-service-a", input, traceId, spanId);
-        String responseB = callDownstreamService("fan-out-service-b", input, traceId, spanId);
-        String responseC = callDownstreamService("fan-out-service-c", input, traceId, spanId);
-        String responseD = callDownstreamService("fan-out-service-d", input, traceId, spanId);
-
-        String response = "Main service executed fan-out calls: " + responseA + ", " + responseB + ", " + responseC + ", " + responseD;
-
-        logService.log("fan-out-service-main", "final-response", methodName, "GET", input, response, traceId, spanId, parentSpanId);
-        return response;
+        return CompletableFuture.allOf(responseA, responseB, responseC, responseD)
+                .thenApply(v -> "Fan-out responses: " + responseA.join() + ", " + responseB.join() + ", " + responseC.join() + ", " + responseD.join());
     }
 
     /**

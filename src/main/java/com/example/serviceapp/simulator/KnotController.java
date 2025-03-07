@@ -15,28 +15,33 @@ import java.util.UUID;
 public class KnotController {
     private final LogService logService;
     private final WebClient webClient;
+    private static final int MAX_DEPTH = 3;
 
     public KnotController(LogService logService, WebClient.Builder webClientBuilder) {
         this.logService = logService;
-        this.webClient = webClientBuilder.baseUrl("http://localhost:8080").build();
+        this.webClient = webClientBuilder.baseUrl("http://localhost:8081").build();
     }
 
     /**
      * Service A -> Calls B & C
-     * @curl curl -X GET "http://localhost:8080/knot-a?input=test"
+     * @curl curl -X GET "http://localhost:8081/knot-a?input=test"
      */
     @GetMapping("/knot-a")
     public String serviceA(@RequestParam String input,
                            @RequestHeader(value = "trace_id", required = false) String traceId,
-                           @RequestHeader(value = "span_id", required = false) String parentSpanId) {
+                           @RequestHeader(value = "span_id", required = false) String parentSpanId,
+                           @RequestHeader(value = "depth", required = false, defaultValue = "0") int depth) {
+
         if (traceId == null) traceId = UUID.randomUUID().toString();
+        if (depth >= MAX_DEPTH) return "Max recursion depth reached. Breaking loop.";
+
         String spanId = UUID.randomUUID().toString();
 
         logService.log("knot-a", "knot-b", "serviceA", "GET", input, null, traceId, spanId, parentSpanId);
         logService.log("knot-a", "knot-c", "serviceA", "GET", input, null, traceId, spanId, parentSpanId);
 
-        String responseB = webClient.get().uri("/knot-b?input=" + input).header("trace_id", traceId).header("span_id", spanId).retrieve().bodyToMono(String.class).block();
-        String responseC = webClient.get().uri("/knot-c?input=" + input).header("trace_id", traceId).header("span_id", spanId).retrieve().bodyToMono(String.class).block();
+        String responseB = callNextService("knot-b", input, traceId, spanId, depth);
+        String responseC = callNextService("knot-c", input, traceId, spanId, depth);
 
         return responseB + " | " + responseC;
     }
@@ -47,13 +52,15 @@ public class KnotController {
     @GetMapping("/knot-b")
     public String serviceB(@RequestParam String input,
                            @RequestHeader(value = "trace_id") String traceId,
-                           @RequestHeader(value = "span_id") String parentSpanId) {
-        String spanId = UUID.randomUUID().toString();
+                           @RequestHeader(value = "span_id") String parentSpanId,
+                           @RequestHeader(value = "depth") int depth) {
 
+        if (depth >= MAX_DEPTH) return "Max recursion depth reached. Breaking loop.";
+
+        String spanId = UUID.randomUUID().toString();
         logService.log("knot-b", "knot-c", "serviceB", "GET", input, null, traceId, spanId, parentSpanId);
 
-        String response = webClient.get().uri("/knot-c?input=" + input).header("trace_id", traceId).header("span_id", spanId).retrieve().bodyToMono(String.class).block();
-        return response;
+        return callNextService("knot-c", input, traceId, spanId, depth);
     }
 
     /**
@@ -62,12 +69,32 @@ public class KnotController {
     @GetMapping("/knot-c")
     public String serviceC(@RequestParam String input,
                            @RequestHeader(value = "trace_id") String traceId,
-                           @RequestHeader(value = "span_id") String parentSpanId) {
-        String spanId = UUID.randomUUID().toString();
+                           @RequestHeader(value = "span_id") String parentSpanId,
+                           @RequestHeader(value = "depth") int depth) {
 
+        if (depth >= MAX_DEPTH) return "Max recursion depth reached. Breaking loop.";
+
+        String spanId = UUID.randomUUID().toString();
         logService.log("knot-c", "knot-a", "serviceC", "GET", input, null, traceId, spanId, parentSpanId);
 
-        String response = webClient.get().uri("/knot-a?input=" + input).header("trace_id", traceId).header("span_id", spanId).retrieve().bodyToMono(String.class).block();
-        return response;
+        return callNextService("knot-a", input, traceId, spanId, depth);
+    }
+
+    /**
+     * Helper method to call the next service while maintaining depth tracking
+     */
+    private String callNextService(String nextService, String input, String traceId, String parentSpanId, int depth) {
+        try {
+            return webClient.get()
+                    .uri("/" + nextService + "?input=" + input)
+                    .header("trace_id", traceId)
+                    .header("span_id", UUID.randomUUID().toString())
+                    .header("depth", String.valueOf(depth + 1)) // Increment depth
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+        } catch (Exception e) {
+            return "Error calling " + nextService + ": " + e.getMessage();
+        }
     }
 }

@@ -19,12 +19,12 @@ public class LongServiceChainController {
 
     public LongServiceChainController(LogService logService, WebClient.Builder webClientBuilder) {
         this.logService = logService;
-        this.webClient = webClientBuilder.baseUrl("http://localhost:8080").build();
+        this.webClient = webClientBuilder.baseUrl("http://localhost:8081").build();
     }
 
     /**
      * Entry point of the long service chain.
-     * @curl curl -X GET "http://localhost:8080/long-chain/start?input=test"
+     * @curl curl -X GET "http://localhost:8081/long-chain/start?input=test"
      */
     @GetMapping("/long-chain/start")
     public String startLongChain(@RequestParam String input,

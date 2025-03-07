@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Simulates Improper API Gateway Usage - overloading the gateway with long-running requests.
@@ -21,27 +22,31 @@ public class ApiGatewayOveruseController {
 
     /**
      * Simulate API Gateway overload scenario.
+     *
      * @curl curl -X GET "http://localhost:8080/api-gateway/overload"
      */
     @GetMapping("/api-gateway/overload")
-    public String apiGatewayOverload(@RequestParam String input,
-                                     @RequestHeader(value = "trace_id", required = false) String traceId,
-                                     @RequestHeader(value = "span_id", required = false) String parentSpanId) {
-        if (traceId == null) traceId = UUID.randomUUID().toString();
-        String spanId = UUID.randomUUID().toString();
-        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+    public CompletableFuture apiGatewayOverload(@RequestParam String input,
+                                                @RequestHeader(value = "trace_id", required = false) String traceId,
+                                                @RequestHeader(value = "span_id", required = false) String parentSpanId) {
 
-        logService.log("api-gateway", "backend-service", methodName, "GET", input, null, traceId, spanId, parentSpanId);
+        // Ensure variables are final/effectively final
+        final String finalTraceId = (traceId == null) ? UUID.randomUUID().toString() : traceId;
+        final String finalParentSpanId = (parentSpanId == null) ? UUID.randomUUID().toString() : parentSpanId;
+        final String finalSpanId = UUID.randomUUID().toString();
 
-        // Simulating high execution time in API Gateway
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        return CompletableFuture.supplyAsync(() -> {
+            logService.log("api-gateway", "backend-service", "apiGatewayOverload", "GET", input, null, finalTraceId, finalSpanId, finalParentSpanId);
 
-        String response = "API Gateway overloaded!";
-        logService.log("api-gateway", "backend-service", methodName, "GET", input, response, traceId, spanId, parentSpanId);
-        return response;
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            String response = "API Gateway overloaded!";
+            logService.log("api-gateway", "backend-service", "apiGatewayOverload", "GET", input, response, finalTraceId, finalSpanId, finalParentSpanId);
+            return response;
+        });
     }
 }

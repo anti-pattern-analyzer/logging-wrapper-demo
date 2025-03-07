@@ -20,7 +20,7 @@ public class NanoServiceController {
 
     /**
      * Nano Service - performs a trivial operation
-     * @curl curl -X GET "http://localhost:8080/nano-service?input=test"
+     * @curl curl -X GET "http://localhost:8081/nano-service?input=test"
      */
     @GetMapping("/nano-service")
     public String nanoService(@RequestParam String input,

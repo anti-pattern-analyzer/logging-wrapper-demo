@@ -19,12 +19,12 @@ public class ChattyServicesController {
 
     public ChattyServicesController(LogService logService, WebClient.Builder webClientBuilder) {
         this.logService = logService;
-        this.webClient = webClientBuilder.baseUrl("http://localhost:8080").build();
+        this.webClient = webClientBuilder.baseUrl("http://localhost:8081").build();
     }
 
     /**
      * Simulate excessive back-and-forth calls between two services.
-     * @curl curl -X GET "http://localhost:8080/chatty/service-a?input=test"
+     * @curl curl -X GET "http://localhost:8081/chatty/service-a?input=test"
      */
     @GetMapping("/chatty/service-a")
     public String serviceA(@RequestParam String input,

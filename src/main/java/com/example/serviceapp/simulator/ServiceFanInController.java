@@ -19,14 +19,14 @@ public class ServiceFanInController {
 
     public ServiceFanInController(LogService logService, WebClient.Builder webClientBuilder) {
         this.logService = logService;
-        this.webClient = webClientBuilder.baseUrl("http://localhost:8080").build();
+        this.webClient = webClientBuilder.baseUrl("http://localhost:8081").build();
     }
 
     /**
      * Simulate multiple upstream services calling the overloaded service.
-     * @curl curl -X GET "http://localhost:8080/fan-in/service-a?input=test"
-     * @curl curl -X GET "http://localhost:8080/fan-in/service-b?input=test"
-     * @curl curl -X GET "http://localhost:8080/fan-in/service-c?input=test"
+     * @curl curl -X GET "http://localhost:8081/fan-in/service-a?input=test"
+     * @curl curl -X GET "http://localhost:8081/fan-in/service-b?input=test"
+     * @curl curl -X GET "http://localhost:8081/fan-in/service-c?input=test"
      */
     @GetMapping("/fan-in/service-a")
     public String serviceA(@RequestParam String input,
