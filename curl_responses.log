@@ -1,0 +1,66 @@
+Running API tests...
+
+Endpoint: api-gateway/overload?input=test
+API Gateway overloaded!
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: chatty/service-a?input=test
+Response from Service B
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: cyclic/cyclic-a?input=test
+Max recursion depth reached. Breaking cycle.
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: eventual-consistency/write?input=test
+Write request received. Data will be available soon!
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: eventual-consistency/read
+test
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: knot-a?input=test
+Max recursion depth reached. Breaking loop. | Max recursion depth reached. Breaking loop. | Max recursion depth reached. Breaking loop.
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: long-chain/start?input=test
+Final service processed the request.
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: nano-service?input=test
+Nano service executed a simple task.
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: fan-in/service-a?input=test
+Overloaded service processed the request.
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: fan-in/service-b?input=test
+Overloaded service processed the request.
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: fan-in/service-c?input=test
+Overloaded service processed the request.
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: fan-out/service-main?input=test
+Fan-out responses: fan-out-service-a processed the request., fan-out-service-b processed the request., fan-out-service-c processed the request., fan-out-service-d processed the request.
+HTTP_CODE: 200
+------------------------------------------------------
+
+Endpoint: sync-overuse/service?input=test
+Synchronous Call Overuse detected!
+HTTP_CODE: 200
+------------------------------------------------------
