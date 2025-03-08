@@ -20,7 +20,7 @@ public class CyclicDependencyController {
 
     public CyclicDependencyController(LogService logService, WebClient.Builder webClientBuilder) {
         this.logService = logService;
-        this.webClient = webClientBuilder.baseUrl("http://localhost:8081").build();
+        this.webClient = webClientBuilder.baseUrl("http://serviceapp:8081").build();
     }
 
     /**
@@ -76,9 +76,12 @@ public class CyclicDependencyController {
      * Helper method to call the next service while maintaining depth tracking
      */
     private String callNextService(String source, String destination, String input, String traceId, String parentSpanId, int depth) {
+        if (depth >= MAX_DEPTH) {
+            return "Max recursion depth reached. Breaking cycle.";
+        }
+
         String spanId = UUID.randomUUID().toString();
-        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
-        logService.log(source, destination, methodName, "GET", input, null, traceId, spanId, parentSpanId);
+        logService.log(source, destination, "callNextService", "GET", input, null, traceId, spanId, parentSpanId);
 
         try {
             return webClient.get()

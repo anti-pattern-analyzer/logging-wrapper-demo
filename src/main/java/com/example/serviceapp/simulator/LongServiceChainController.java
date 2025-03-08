@@ -19,7 +19,7 @@ public class LongServiceChainController {
 
     public LongServiceChainController(LogService logService, WebClient.Builder webClientBuilder) {
         this.logService = logService;
-        this.webClient = webClientBuilder.baseUrl("http://localhost:8081").build();
+        this.webClient = webClientBuilder.baseUrl("http://serviceapp:8081").build();
     }
 
     /**

@@ -21,7 +21,7 @@ HTTP_CODE: 200
 ------------------------------------------------------
 
 Endpoint: eventual-consistency/read
-test
+Stale Data (Not Updated Yet)
 HTTP_CODE: 200
 ------------------------------------------------------
 
