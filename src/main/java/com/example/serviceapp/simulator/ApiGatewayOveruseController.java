@@ -23,7 +23,7 @@ public class ApiGatewayOveruseController {
     /**
      * Simulate API Gateway overload scenario.
      *
-     * @curl curl -X GET "http://localhost:8080/api-gateway/overload"
+     * @curl curl -X GET "http://localhost:8081/api-gateway/overload?input=test"
      */
     @GetMapping("/api-gateway/overload")
     public CompletableFuture apiGatewayOverload(@RequestParam String input,
