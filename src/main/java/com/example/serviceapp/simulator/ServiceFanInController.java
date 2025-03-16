@@ -1,11 +1,8 @@
 package com.example.serviceapp.simulator;
 
 import com.example.loggingwrapper.LogService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
@@ -19,14 +16,12 @@ public class ServiceFanInController {
 
     public ServiceFanInController(LogService logService, WebClient.Builder webClientBuilder) {
         this.logService = logService;
-        this.webClient = webClientBuilder.baseUrl("http://serviceapp:8081").build();
+        this.webClient = webClientBuilder.baseUrl("http://localhost:8081").build();
     }
 
     /**
      * Simulate multiple upstream services calling the overloaded service.
      * @curl curl -X GET "http://localhost:8081/fan-in/service-a?input=test"
-     * @curl curl -X GET "http://localhost:8081/fan-in/service-b?input=test"
-     * @curl curl -X GET "http://localhost:8081/fan-in/service-c?input=test"
      */
     @GetMapping("/fan-in/service-a")
     public String serviceA(@RequestParam String input,
@@ -57,13 +52,24 @@ public class ServiceFanInController {
                                     @RequestHeader(value = "trace_id") String traceId,
                                     @RequestHeader(value = "span_id") String parentSpanId) {
         String spanId = UUID.randomUUID().toString();
-        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+        String methodName = "processOverloadedService";
 
-        logService.log("fan-in-overloaded", null, methodName, "GET", input, null, traceId, spanId, parentSpanId);
+        // Log before processing with `102 Processing`
+        logService.log("fan-in-overloaded-service", null, methodName, "GET", input,
+                102, null, traceId, spanId, parentSpanId);
+
+        try {
+            Thread.sleep(1000); // Simulating slight delay in overloaded service
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
         String response = "Overloaded service processed the request.";
 
-        logService.log("fan-in-overloaded", null, methodName, "GET", input, response, traceId, spanId, parentSpanId);
+        // Log after processing with `200 OK`
+        logService.log("fan-in-overloaded-service", null, methodName, "GET", input,
+                200, response, traceId, spanId, parentSpanId);
+
         return response;
     }
 
@@ -73,9 +79,11 @@ public class ServiceFanInController {
     private String callOverloadedService(String sourceService, String input, String traceId, String parentSpanId) {
         if (traceId == null) traceId = UUID.randomUUID().toString();
         String spanId = UUID.randomUUID().toString();
-        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+        String methodName = "invokeOverloadedService";
 
-        logService.log(sourceService, "fan-in-overloaded", methodName, "GET", input, null, traceId, spanId, parentSpanId);
+        // Log before making the request with `102 Processing`
+        logService.log(sourceService, "fan-in-overloaded-service", methodName, "GET", input,
+                102, null, traceId, spanId, parentSpanId);
 
         String response = webClient.get()
                 .uri("/fan-in/overloaded?input=" + input)
@@ -85,7 +93,10 @@ public class ServiceFanInController {
                 .bodyToMono(String.class)
                 .block();
 
-        logService.log(sourceService, "fan-in-overloaded", methodName, "GET", input, response, traceId, spanId, parentSpanId);
+        // Log after receiving the response with `200 OK`
+        logService.log(sourceService, "fan-in-overloaded-service", methodName, "GET", input,
+                200, response, traceId, spanId, parentSpanId);
+
         return response;
     }
 }

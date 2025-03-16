@@ -34,7 +34,9 @@ public class EventualConsistencyController {
         if (traceId == null) traceId = UUID.randomUUID().toString();
         String spanId = UUID.randomUUID().toString();
 
-        logService.log("eventual-consistency-write", "database", "writeData", "EVENT", input, null, traceId, spanId, parentSpanId);
+        // Log the initial request with `102 Processing`
+        logService.log("eventual-consistency-write-service", "database-service", "handleWriteRequest", "EVENT", input,
+                102, null, traceId, spanId, parentSpanId);
 
         // Introduce artificial delay before updating database (simulating slow replication)
         String finalTraceId = traceId;
@@ -42,7 +44,11 @@ public class EventualConsistencyController {
             try {
                 Thread.sleep(5000); // Simulating 5 seconds delay in data propagation
                 database.put("latestData", input);
-                logService.log("database", "eventual-consistency-write", "updateDB", "EVENT", input, "Updated in DB", finalTraceId, spanId, parentSpanId);
+
+                // Log after the delayed write with `200 OK`
+                logService.log("database-service", "eventual-consistency-write-service", "finalizeWrite", "EVENT", input,
+                        200, "Updated in DB", finalTraceId, spanId, parentSpanId);
+
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -62,11 +68,16 @@ public class EventualConsistencyController {
         if (traceId == null) traceId = UUID.randomUUID().toString();
         String spanId = UUID.randomUUID().toString();
 
-        logService.log("eventual-consistency-read", "database", "readData", "GET", "Fetch latest", null, traceId, spanId, parentSpanId);
+        // Log the request to read data with `102 Processing`
+        logService.log("eventual-consistency-read-service", "database-service", "handleReadRequest", "GET", "Fetch latest",
+                102, null, traceId, spanId, parentSpanId);
 
         String response = database.getOrDefault("latestData", "Stale Data (Not Updated Yet)");
 
-        logService.log("eventual-consistency-read", "database", "readData", "GET", "Fetch latest", response, traceId, spanId, parentSpanId);
+        // Log the response with `200 OK`
+        logService.log("eventual-consistency-read-service", "database-service", "handleReadRequest", "GET", "Fetch latest",
+                200, response, traceId, spanId, parentSpanId);
+
         return response;
     }
 }

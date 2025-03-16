@@ -26,26 +26,32 @@ public class ApiGatewayOveruseController {
      * @curl curl -X GET "http://localhost:8081/api-gateway/overload?input=test"
      */
     @GetMapping("/api-gateway/overload")
-    public CompletableFuture apiGatewayOverload(@RequestParam String input,
-                                                @RequestHeader(value = "trace_id", required = false) String traceId,
-                                                @RequestHeader(value = "span_id", required = false) String parentSpanId) {
+    public CompletableFuture<String> apiGatewayOverload(@RequestParam String input,
+                                                        @RequestHeader(value = "trace_id", required = false) String traceId,
+                                                        @RequestHeader(value = "span_id", required = false) String parentSpanId) {
 
-        // Ensure variables are final/effectively final
+        // Generate unique identifiers
         final String finalTraceId = (traceId == null) ? UUID.randomUUID().toString() : traceId;
         final String finalParentSpanId = (parentSpanId == null) ? UUID.randomUUID().toString() : parentSpanId;
         final String finalSpanId = UUID.randomUUID().toString();
 
         return CompletableFuture.supplyAsync(() -> {
-            logService.log("api-gateway", "backend-service", "apiGatewayOverload", "GET", input, null, finalTraceId, finalSpanId, finalParentSpanId);
+            // Log request start with `102 Processing`
+            logService.log("api-gateway-service", "backend-processing-service", "processOverloadedRequest", "GET", input,
+                    102, null, finalTraceId, finalSpanId, finalParentSpanId);
 
             try {
-                Thread.sleep(3000);
+                Thread.sleep(3000); // Simulating long processing
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
 
             String response = "API Gateway overloaded!";
-            logService.log("api-gateway", "backend-service", "apiGatewayOverload", "GET", input, response, finalTraceId, finalSpanId, finalParentSpanId);
+
+            // Log request completion with `200 OK`
+            logService.log("api-gateway-service", "backend-processing-service", "processOverloadedRequest", "GET", input,
+                    200, response, finalTraceId, finalSpanId, finalParentSpanId);
+
             return response;
         });
     }

@@ -1,11 +1,8 @@
 package com.example.serviceapp.simulator;
 
 import com.example.loggingwrapper.LogService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
@@ -19,7 +16,7 @@ public class LongServiceChainController {
 
     public LongServiceChainController(LogService logService, WebClient.Builder webClientBuilder) {
         this.logService = logService;
-        this.webClient = webClientBuilder.baseUrl("http://serviceapp:8081").build();
+        this.webClient = webClientBuilder.baseUrl("http://localhost:8081").build();
     }
 
     /**
@@ -32,9 +29,10 @@ public class LongServiceChainController {
                                  @RequestHeader(value = "span_id", required = false) String parentSpanId) {
         if (traceId == null) traceId = UUID.randomUUID().toString();
         String spanId = UUID.randomUUID().toString();
-        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+        String methodName = "initiateLongChain";
 
-        logService.log("long-chain-start", "long-chain-middle1", methodName, "GET", input, null, traceId, spanId, parentSpanId);
+        logService.log("long-chain-start-service", "long-chain-middle1-service", methodName, "GET", input,
+                102, null, traceId, spanId, parentSpanId);
 
         String response = webClient.get()
                 .uri("/long-chain/middle1?input=" + input)
@@ -44,56 +42,45 @@ public class LongServiceChainController {
                 .bodyToMono(String.class)
                 .block();
 
-        logService.log("long-chain-start", "long-chain-middle1", methodName, "GET", input, response, traceId, spanId, parentSpanId);
+        logService.log("long-chain-start-service", "long-chain-middle1-service", methodName, "GET", input,
+                200, response, traceId, spanId, parentSpanId);
+
         return response;
     }
 
-    /**
-     * Middle service in the long chain.
-     */
     @GetMapping("/long-chain/middle1")
     public String middleService1(@RequestParam String input,
                                  @RequestHeader(value = "trace_id") String traceId,
                                  @RequestHeader(value = "span_id") String parentSpanId) {
-        String spanId = UUID.randomUUID().toString();
-        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
-
-        logService.log("long-chain-middle1", "long-chain-middle2", methodName, "GET", input, null, traceId, spanId, parentSpanId);
-
-        String response = webClient.get()
-                .uri("/long-chain/middle2?input=" + input)
-                .header("trace_id", traceId)
-                .header("span_id", spanId)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-        logService.log("long-chain-middle1", "long-chain-middle2", methodName, "GET", input, response, traceId, spanId, parentSpanId);
-        return response;
+        return callNextService("long-chain-middle1-service", "long-chain-middle2-service", input, traceId, parentSpanId);
     }
 
-    /**
-     * Another intermediary service before reaching the final one.
-     */
     @GetMapping("/long-chain/middle2")
     public String middleService2(@RequestParam String input,
                                  @RequestHeader(value = "trace_id") String traceId,
                                  @RequestHeader(value = "span_id") String parentSpanId) {
-        String spanId = UUID.randomUUID().toString();
-        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+        return callNextService("long-chain-middle2-service", "long-chain-middle3-service", input, traceId, parentSpanId);
+    }
 
-        logService.log("long-chain-middle2", "long-chain-end", methodName, "GET", input, null, traceId, spanId, parentSpanId);
+    @GetMapping("/long-chain/middle3")
+    public String middleService3(@RequestParam String input,
+                                 @RequestHeader(value = "trace_id") String traceId,
+                                 @RequestHeader(value = "span_id") String parentSpanId) {
+        return callNextService("long-chain-middle3-service", "long-chain-middle4-service", input, traceId, parentSpanId);
+    }
 
-        String response = webClient.get()
-                .uri("/long-chain/end?input=" + input)
-                .header("trace_id", traceId)
-                .header("span_id", spanId)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+    @GetMapping("/long-chain/middle4")
+    public String middleService4(@RequestParam String input,
+                                 @RequestHeader(value = "trace_id") String traceId,
+                                 @RequestHeader(value = "span_id") String parentSpanId) {
+        return callNextService("long-chain-middle4-service", "long-chain-middle5-service", input, traceId, parentSpanId);
+    }
 
-        logService.log("long-chain-middle2", "long-chain-end", methodName, "GET", input, response, traceId, spanId, parentSpanId);
-        return response;
+    @GetMapping("/long-chain/middle5")
+    public String middleService5(@RequestParam String input,
+                                 @RequestHeader(value = "trace_id") String traceId,
+                                 @RequestHeader(value = "span_id") String parentSpanId) {
+        return callNextService("long-chain-middle5-service", "long-chain-end-service", input, traceId, parentSpanId);
     }
 
     /**
@@ -104,13 +91,40 @@ public class LongServiceChainController {
                              @RequestHeader(value = "trace_id") String traceId,
                              @RequestHeader(value = "span_id") String parentSpanId) {
         String spanId = UUID.randomUUID().toString();
-        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+        String methodName = "finalizeLongChain";
 
-        logService.log("long-chain-end", null, methodName, "GET", input, null, traceId, spanId, parentSpanId);
+        logService.log("long-chain-end-service", null, methodName, "GET", input,
+                102, null, traceId, spanId, parentSpanId);
 
         String response = "Final service processed the request.";
 
-        logService.log("long-chain-end", null, methodName, "GET", input, response, traceId, spanId, parentSpanId);
+        logService.log("long-chain-end-service", null, methodName, "GET", input,
+                200, response, traceId, spanId, parentSpanId);
+
+        return response;
+    }
+
+    /**
+     * Helper method to log and call the next service in the chain.
+     */
+    private String callNextService(String currentService, String nextService, String input, String traceId, String parentSpanId) {
+        String spanId = UUID.randomUUID().toString();
+        String methodName = "process" + currentService.replace("long-chain-", "").replace("-service", "");
+
+        logService.log(currentService, nextService, methodName, "GET", input,
+                102, null, traceId, spanId, parentSpanId);
+
+        String response = webClient.get()
+                .uri("/long-chain/" + nextService.replace("long-chain-", "").replace("-service", "") + "?input=" + input)
+                .header("trace_id", traceId)
+                .header("span_id", spanId)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+        logService.log(currentService, nextService, methodName, "GET", input,
+                200, response, traceId, spanId, parentSpanId);
+
         return response;
     }
 }

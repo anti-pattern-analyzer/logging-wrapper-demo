@@ -15,14 +15,14 @@ else
     exit 1
 fi
 
-# Define an array of endpoints
+# Define an array of updated endpoints
 endpoints=(
     "api-gateway/overload?input=test"
-    "chatty/service-a?input=test"
-    "cyclic/cyclic-a?input=test"
+    "chatty/start?input=test"
+    "cyclic/manual-log?input=test"
     "eventual-consistency/write?input=test"
     "eventual-consistency/read"
-    "knot-a?input=test"
+    "knot/start?input=test"
     "long-chain/start?input=test"
     "nano-service?input=test"
     "fan-in/service-a?input=test"

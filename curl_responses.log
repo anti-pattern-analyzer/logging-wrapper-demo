@@ -5,13 +5,13 @@ API Gateway overloaded!
 HTTP_CODE: 200
 ------------------------------------------------------
 
-Endpoint: chatty/service-a?input=test
-Response from Service B
+Endpoint: chatty/start?input=test
+chatty-service-14 reached the end of the chatty interaction.
 HTTP_CODE: 200
 ------------------------------------------------------
 
-Endpoint: cyclic/cyclic-a?input=test
-Max recursion depth reached. Breaking cycle.
+Endpoint: cyclic/manual-log?input=test
+Cyclic dependency simulation logged successfully.
 HTTP_CODE: 200
 ------------------------------------------------------
 
@@ -25,8 +25,8 @@ Stale Data (Not Updated Yet)
 HTTP_CODE: 200
 ------------------------------------------------------
 
-Endpoint: knot-a?input=test
-Max recursion depth reached. Breaking loop. | Max recursion depth reached. Breaking loop. | Max recursion depth reached. Breaking loop.
+Endpoint: knot/start?input=test
+Services tangled together.
 HTTP_CODE: 200
 ------------------------------------------------------
 
@@ -56,7 +56,7 @@ HTTP_CODE: 200
 ------------------------------------------------------
 
 Endpoint: fan-out/service-main?input=test
-Fan-out responses: fan-out-service-a processed the request., fan-out-service-b processed the request., fan-out-service-c processed the request., fan-out-service-d processed the request.
+Fan-out responses: service-a processed the request., service-b processed the request., service-c processed the request., service-d processed the request.
 HTTP_CODE: 200
 ------------------------------------------------------
 

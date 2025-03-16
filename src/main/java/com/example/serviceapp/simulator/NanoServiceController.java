@@ -19,7 +19,7 @@ public class NanoServiceController {
     }
 
     /**
-     * Nano Service - performs a trivial operation
+     * Nano Service - performs a trivial operation.
      * @curl curl -X GET "http://localhost:8081/nano-service?input=test"
      */
     @GetMapping("/nano-service")
@@ -28,14 +28,19 @@ public class NanoServiceController {
                               @RequestHeader(value = "span_id", required = false) String parentSpanId) {
         if (traceId == null) traceId = UUID.randomUUID().toString();
         String spanId = UUID.randomUUID().toString();
-        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+        String methodName = "executeNanoTask";
 
-        logService.log("nano-service", null, methodName, "GET", input, null, traceId, spanId, parentSpanId);
+        // Log before processing with `102 Processing`
+        logService.log("nano-service-handler", null, methodName, "GET", input,
+                102, null, traceId, spanId, parentSpanId);
 
         // Nano services often just return static or trivial values
         String response = "Nano service executed a simple task.";
 
-        logService.log("nano-service", null, methodName, "GET", input, response, traceId, spanId, parentSpanId);
+        // Log after processing with `200 OK`
+        logService.log("nano-service-handler", null, methodName, "GET", input,
+                200, response, traceId, spanId, parentSpanId);
+
         return response;
     }
 }
